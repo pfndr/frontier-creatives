@@ -1,0 +1,2391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <link rel="icon" type="image/png" href="images/icon - transparent.png">
+  <title>Evolving Agentic Workflows · Frontier Creatives · Jun 9, 2026</title>
+  <meta name="description" content="Marc Krejci lightning talk for Frontier Creatives at Pioneer Square Labs, Jun 9, 2026.">
+  <meta name="author" content="Marc Krejci">
+  <meta name="theme-color" content="#FFCC64">
+
+  <!-- Open Graph / social share -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Pathfinder Foundry">
+  <meta property="og:title" content="Evolving Agentic Workflows">
+  <meta property="og:description" content="Design thinking, rebuilt for agents. A Frontier Creatives lightning talk by Marc Krejci.">
+  <meta property="og:image" content="./og-image.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Evolving Agentic Workflows">
+  <meta name="twitter:description" content="Design thinking, rebuilt for agents. A Frontier Creatives lightning talk by Marc Krejci.">
+  <meta name="twitter:image" content="./og-image.png">
+
+  <link rel="stylesheet" href="styles.css">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // =====================================================
+    // BRAND CONSTANTS · Pathfinder Foundry
+    // =====================================================
+    const ACCENT      = "#FFCC64";
+    const ACCENT_DIM  = "rgba(255,204,100,0.18)";
+    const ACCENT_SOFT = "rgba(255,204,100,0.08)";
+    const TEXT        = "#f5f5f5";
+    const TEXT_MUTED  = "#a8a8a8";
+    const TEXT_DIM    = "rgba(245,245,245,0.55)";
+    const CARD_BG     = "rgba(255,255,255,0.04)";
+    const CARD_BORDER = "rgba(255,255,255,0.10)";
+
+    const FONT_STACK =
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Roboto, sans-serif";
+    const SERIF_ITALIC =
+      "'Baskerville', 'Baskerville Old Face', Garamond, Georgia, 'Times New Roman', serif";
+    const MONO =
+      "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
+
+    // =====================================================
+    // BRAND LOCKUP
+    // =====================================================
+    function PFLockup({ height = 28 }) {
+      const [errored, setErrored] = useState(false);
+      if (!errored) {
+        return (
+          <img
+            src="images/logo + wordmark _ white.png"
+            alt="Pathfinder Foundry"
+            style={{ height, width: "auto", display: "block" }}
+            onError={() => setErrored(true)}
+          />
+        );
+      }
+      const scale = height / 28;
+      const r = 2.2 * scale;
+      const cx = [4, 12, 20, 28].map(x => x * scale);
+      const cy = [4, 12, 20].map(y => y * scale);
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 * scale }}>
+          <svg width={32 * scale} height={24 * scale}
+               viewBox={`0 0 ${32 * scale} ${24 * scale}`}
+               aria-label="Pathfinder Foundry">
+            {cx.map((x, i) => <circle key={`r1-${i}`} cx={x} cy={cy[0]} r={r} fill={ACCENT} />)}
+            {cx.map((x, i) => <circle key={`r2-${i}`} cx={x} cy={cy[1]} r={r} fill={ACCENT} />)}
+            <circle cx={cx[0]} cy={cy[2]} r={r} fill={ACCENT} />
+            <circle cx={cx[2]} cy={cy[2]} r={r} fill={ACCENT} />
+          </svg>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.05 }}>
+            <span style={{ fontSize: 14 * scale, fontWeight: 500, color: TEXT, fontFamily: FONT_STACK }}>pathfinder</span>
+            <span style={{ fontSize: 11 * scale, fontStyle: "italic", color: TEXT, fontFamily: SERIF_ITALIC, textAlign: "right" }}>foundry</span>
+          </div>
+        </div>
+      );
+    }
+
+    // =====================================================
+    // FULLSCREEN BUTTON
+    // =====================================================
+    function FullscreenButton() {
+      const [isFs, setIsFs] = useState(false);
+      useEffect(() => {
+        const onChange = () => setIsFs(!!document.fullscreenElement);
+        document.addEventListener("fullscreenchange", onChange);
+        return () => document.removeEventListener("fullscreenchange", onChange);
+      }, []);
+      const toggle = () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      };
+      return (
+        <button className="pf-fs-btn" onClick={toggle}
+          aria-label={isFs ? "Exit fullscreen" : "Enter fullscreen"}
+          title={isFs ? "Exit fullscreen" : "Enter fullscreen"}>
+          {isFs ? (
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+                 stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 2v4h4M2 10h4v4M6 2v4H2M14 6V2M14 10h-4v4" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+                 stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
+            </svg>
+          )}
+        </button>
+      );
+    }
+
+    // =====================================================
+    // SHARED SLIDE PRIMITIVES
+    // =====================================================
+    function SlideShell({ children, dense = false }) {
+      return (
+        <div style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: dense ? "5vh 6vw" : "9vh 8vw",
+          boxSizing: "border-box",
+        }}>
+          <div style={{ width: "100%", maxWidth: 1280 }}>{children}</div>
+        </div>
+      );
+    }
+
+    function Eyebrow({ children, color = ACCENT }) {
+      return (
+        <div style={{
+          fontSize: "0.78rem",
+          letterSpacing: 2.4,
+          color,
+          fontWeight: 700,
+          marginBottom: "1.1rem",
+          textTransform: "uppercase",
+        }}>
+          {children}
+        </div>
+      );
+    }
+
+    function SlideTitle({ children, size = "lg" }) {
+      const fs = size === "xl"
+        ? "clamp(2.8rem, 5.4vw, 5rem)"
+        : "clamp(2.2rem, 4.2vw, 4rem)";
+      return (
+        <h1 style={{
+          fontSize: fs,
+          lineHeight: 1.06,
+          letterSpacing: "-0.022em",
+          color: TEXT,
+          margin: "0 0 1.8rem 0",
+          fontWeight: 700,
+        }}>
+          {children}
+        </h1>
+      );
+    }
+
+    function Card({ children, accentTop = false, accentLeft = false, style = {} }) {
+      return (
+        <div style={{
+          padding: "1.25rem 1.4rem",
+          background: CARD_BG,
+          border: `1px solid ${CARD_BORDER}`,
+          borderTop: accentTop ? `3px solid ${ACCENT}` : undefined,
+          borderLeft: accentLeft ? `3px solid ${ACCENT}` : undefined,
+          borderRadius: 14,
+          ...style,
+        }}>
+          {children}
+        </div>
+      );
+    }
+
+    // Arrow SVG used between cards in horizontal flows
+    function FlowArrow() {
+      return (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          width: 32,
+          paddingBottom: "0.8rem",
+        }}>
+          <svg width="24" height="14" viewBox="0 0 24 14">
+            <line x1="0" y1="7" x2="18" y2="7"
+                  stroke={ACCENT} strokeWidth="1.5" strokeOpacity="0.5" />
+            <polyline points="14,3 20,7 14,11" fill="none"
+                      stroke={ACCENT} strokeWidth="1.5" strokeOpacity="0.5"
+                      strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      );
+    }
+
+    // QR code placeholder with a recognizable grid pattern
+    function QRPlaceholder({ url, label, size = 150 }) {
+      return (
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "0.7rem",
+        }}>
+          <div style={{
+            width: size,
+            height: size,
+            border: `2px dashed ${ACCENT}`,
+            borderRadius: 12,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            background: ACCENT_SOFT,
+            flexShrink: 0,
+          }}>
+            {/* Stylized QR grid */}
+            <svg width={size * 0.54} height={size * 0.54} viewBox="0 0 46 46" aria-hidden="true">
+              {/* Top-left finder */}
+              <rect x="2"  y="2"  width="14" height="14" rx="2" fill="none" stroke={ACCENT} strokeWidth="1.8" opacity="0.7"/>
+              <rect x="5.5" y="5.5" width="7" height="7" fill={ACCENT} opacity="0.8"/>
+              {/* Top-right finder */}
+              <rect x="30" y="2"  width="14" height="14" rx="2" fill="none" stroke={ACCENT} strokeWidth="1.8" opacity="0.7"/>
+              <rect x="33.5" y="5.5" width="7" height="7" fill={ACCENT} opacity="0.8"/>
+              {/* Bottom-left finder */}
+              <rect x="2"  y="30" width="14" height="14" rx="2" fill="none" stroke={ACCENT} strokeWidth="1.8" opacity="0.7"/>
+              <rect x="5.5" y="33.5" width="7" height="7" fill={ACCENT} opacity="0.8"/>
+              {/* Data dots */}
+              <rect x="20" y="3"  width="5" height="5" fill={ACCENT} opacity="0.5"/>
+              <rect x="20" y="11" width="5" height="5" fill={ACCENT} opacity="0.35"/>
+              <rect x="3"  y="20" width="5" height="5" fill={ACCENT} opacity="0.5"/>
+              <rect x="11" y="20" width="5" height="5" fill={ACCENT} opacity="0.35"/>
+              <rect x="30" y="20" width="5" height="5" fill={ACCENT} opacity="0.5"/>
+              <rect x="38" y="20" width="5" height="5" fill={ACCENT} opacity="0.35"/>
+              <rect x="20" y="30" width="5" height="5" fill={ACCENT} opacity="0.5"/>
+              <rect x="20" y="38" width="5" height="5" fill={ACCENT} opacity="0.35"/>
+              <rect x="30" y="30" width="5" height="5" fill={ACCENT} opacity="0.55"/>
+              <rect x="38" y="38" width="5" height="5" fill={ACCENT} opacity="0.55"/>
+              <rect x="30" y="38" width="5" height="5" fill={ACCENT} opacity="0.35"/>
+              <rect x="38" y="30" width="5" height="5" fill={ACCENT} opacity="0.35"/>
+            </svg>
+            <div style={{
+              fontSize: "0.58rem",
+              letterSpacing: 1.8,
+              color: ACCENT,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              opacity: 0.8,
+            }}>
+              [ QR CODE ]
+            </div>
+          </div>
+          {label && (
+            <div style={{
+              fontSize: "0.82rem",
+              color: TEXT,
+              fontWeight: 600,
+              textAlign: "center",
+              lineHeight: 1.3,
+            }}>{label}</div>
+          )}
+          {url && (
+            <div style={{
+              fontSize: "0.72rem",
+              color: TEXT_MUTED,
+              textAlign: "center",
+              letterSpacing: 0.3,
+              fontFamily: MONO,
+            }}>{url}</div>
+          )}
+        </div>
+      );
+    }
+
+    // =====================================================
+    // BROWSER CHROME · Preview card + fullscreen overlay
+    // =====================================================
+    const BrowserOverlayContext = React.createContext({ open: () => {} });
+
+    function TrafficDots() {
+      return (
+        <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
+        </div>
+      );
+    }
+
+    const BrowserRefreshIcon = () => (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 4 23 10 17 10" />
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+      </svg>
+    );
+    const BrowserShareIcon = () => (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+        <polyline points="15 3 21 3 21 9" />
+        <line x1="10" y1="14" x2="21" y2="3" />
+      </svg>
+    );
+    const BrowserExpandIcon = () => (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="15 3 21 3 21 9" />
+        <polyline points="9 21 3 21 3 15" />
+        <line x1="21" y1="3" x2="14" y2="10" />
+        <line x1="3" y1="21" x2="10" y2="14" />
+      </svg>
+    );
+    const BrowserCloseIcon = () => (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    );
+
+    function BrowserChromeButton({ onClick, title, children }) {
+      const [hover, setHover] = useState(false);
+      return (
+        <button
+          onClick={onClick}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          title={title}
+          aria-label={title}
+          style={{
+            width: 26, height: 26,
+            border: "none",
+            background: hover ? "rgba(255,255,255,0.10)" : "transparent",
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: 5,
+            color: hover ? TEXT : TEXT_MUTED,
+            transition: "background 120ms, color 120ms",
+            padding: 0,
+            fontFamily: FONT_STACK,
+          }}
+        >
+          {children}
+        </button>
+      );
+    }
+
+    function BrowserPreviewCard({ url, label, tagline, image, height = 220, fill = false, showHeader = true }) {
+      const iframeRef = useRef(null);
+      const overlayCtx = React.useContext(BrowserOverlayContext);
+      const [imgError, setImgError] = useState(false);
+      const display = url.replace(/^https?:\/\//, "");
+
+      const refresh = (e) => {
+        e.stopPropagation();
+        const iframe = iframeRef.current;
+        if (iframe) { const src = iframe.src; iframe.src = ""; iframe.src = src; }
+      };
+      const openTab = (e) => { e.stopPropagation(); window.open(url, "_blank", "noopener"); };
+      const expand  = (e) => { e.stopPropagation(); overlayCtx.open(url, label, image); };
+
+      return (
+        <div
+          onClick={expand}
+          style={{
+            display: "flex", flexDirection: "column",
+            background: CARD_BG,
+            border: `1px solid ${CARD_BORDER}`,
+            borderRadius: 12, overflow: "hidden",
+            cursor: "zoom-in",
+            transition: "border-color 150ms",
+            height: fill ? "100%" : undefined,
+            minHeight: 0,
+            boxShadow: fill ? "0 8px 36px rgba(0,0,0,0.35)" : undefined,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = ACCENT_DIM; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = CARD_BORDER; }}
+        >
+          {showHeader && (label || tagline) && (
+            <div style={{ padding: "0.7rem 0.9rem 0.55rem", borderBottom: `1px solid ${CARD_BORDER}` }}>
+              {label && (
+                <div style={{
+                  fontSize: "0.78rem", letterSpacing: 1.6, color: ACCENT,
+                  fontWeight: 700, textTransform: "uppercase", marginBottom: 2,
+                }}>{label}</div>
+              )}
+              {tagline && (
+                <div style={{
+                  fontSize: "0.78rem", color: TEXT_MUTED, lineHeight: 1.4,
+                  fontStyle: "italic", fontFamily: SERIF_ITALIC,
+                }}>{tagline}</div>
+              )}
+            </div>
+          )}
+          {/* Chrome bar */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "6px 9px",
+            background: "rgba(255,255,255,0.04)",
+            borderBottom: `1px solid ${CARD_BORDER}`,
+            flexShrink: 0,
+          }}>
+            <TrafficDots />
+            <div style={{
+              flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 5,
+              padding: "3px 8px", fontFamily: MONO, fontSize: 11, color: TEXT_MUTED,
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0,
+            }}>
+              {display}
+            </div>
+            <div style={{ display: "flex", gap: 2 }}>
+              {!image && (
+                <BrowserChromeButton onClick={refresh} title="Refresh"><BrowserRefreshIcon /></BrowserChromeButton>
+              )}
+              <BrowserChromeButton onClick={openTab} title="Open in new tab"><BrowserShareIcon /></BrowserChromeButton>
+              <BrowserChromeButton onClick={expand} title="Fullscreen"><BrowserExpandIcon /></BrowserChromeButton>
+            </div>
+          </div>
+          {/* Body, screenshot (for sites that block iframing) or live iframe */}
+          <div style={{
+            position: "relative",
+            height: fill ? undefined : height,
+            flex: fill ? "1 1 auto" : undefined,
+            minHeight: 0,
+            overflow: "hidden",
+            background: image && !imgError ? "#0c0c0c" : "#fff",
+          }}>
+            {image ? (
+              imgError ? (
+                <div style={{
+                  position: "absolute", inset: 0,
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center",
+                  gap: 12, padding: "0 2rem", textAlign: "center",
+                  background: "#0c0c0c", color: TEXT_MUTED, fontFamily: MONO, fontSize: 13,
+                }}>
+                  <div style={{ color: TEXT }}>Screenshot not found</div>
+                  <div>Add <span style={{ color: ACCENT }}>{image}</span> to display it here.</div>
+                  <button
+                    onClick={openTab}
+                    style={{
+                      marginTop: 4, padding: "9px 18px", cursor: "pointer",
+                      background: ACCENT, color: "#111", border: "none", borderRadius: 6,
+                      fontFamily: MONO, fontWeight: 700, fontSize: 12,
+                    }}
+                  >Open live project ↗</button>
+                </div>
+              ) : (
+                <img
+                  src={image}
+                  alt={label || url}
+                  onClick={expand}
+                  onError={() => setImgError(true)}
+                  title={`Open ${display}`}
+                  style={{
+                    width: "100%", height: "auto", display: "block",
+                    cursor: "zoom-in", background: "#fff",
+                  }}
+                />
+              )
+            ) : (
+              <React.Fragment>
+                <iframe
+                  ref={iframeRef}
+                  src={url}
+                  title={label || url}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  loading="lazy"
+                  style={{
+                    position: "absolute", inset: 0,
+                    width: "100%", height: "100%",
+                    border: "none", display: "block", background: "#fff",
+                  }}
+                />
+                {/* Scrim so card click reliably triggers expand even over iframe */}
+                <div
+                  onClick={expand}
+                  style={{ position: "absolute", inset: 0, background: "transparent", cursor: "zoom-in" }}
+                  aria-hidden="true"
+                />
+              </React.Fragment>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function BrowserOverlay({ state, onClose }) {
+      const iframeRef = useRef(null);
+      const { url, label, image, visible } = state;
+      const [imgError, setImgError] = useState(false);
+
+      useEffect(() => { setImgError(false); }, [image]);
+
+      useEffect(() => {
+        if (!visible) return;
+        const handler = (e) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+      }, [visible, onClose]);
+
+      const refresh = () => {
+        const iframe = iframeRef.current;
+        if (iframe) { const src = iframe.src; iframe.src = ""; iframe.src = src; }
+      };
+      const openTab = () => { if (url) window.open(url, "_blank", "noopener"); };
+
+      if (!visible || !url) return null;
+      const display = url.replace(/^https?:\/\//, "");
+
+      return (
+        <div
+          onClick={onClose}
+          style={{
+            position: "fixed", inset: 0, zIndex: 500,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(0,0,0,0.82)",
+            padding: "4.5vh 5vw",
+            animation: "pf-overlayIn 220ms ease-out",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%", height: "100%",
+              display: "flex", flexDirection: "column",
+              background: "#111",
+              border: `1px solid ${CARD_BORDER}`,
+              borderRadius: 12, overflow: "hidden",
+              boxShadow: "0 30px 80px rgba(0,0,0,0.6)",
+            }}
+          >
+            <div style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "9px 14px",
+              background: "rgba(255,255,255,0.04)",
+              borderBottom: `1px solid ${CARD_BORDER}`,
+              flexShrink: 0,
+            }}>
+              <TrafficDots />
+              <div style={{
+                flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 5,
+                padding: "5px 12px", fontFamily: MONO, fontSize: 12, color: TEXT_MUTED,
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0,
+              }}>
+                {label ? `${label}   ·   ${display}` : display}
+              </div>
+              <div style={{ display: "flex", gap: 3 }}>
+                {!image && (
+                  <BrowserChromeButton onClick={refresh} title="Refresh"><BrowserRefreshIcon /></BrowserChromeButton>
+                )}
+                <BrowserChromeButton onClick={openTab} title="Open in new tab"><BrowserShareIcon /></BrowserChromeButton>
+                <BrowserChromeButton onClick={onClose} title="Close (Esc)"><BrowserCloseIcon /></BrowserChromeButton>
+              </div>
+            </div>
+            {image ? (
+              /* Screenshot mode, claude.ai / chatgpt block iframing, so we show a
+                 captured image styled like the live page. Click → open the real site. */
+              <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "auto", background: "#fff" }}>
+                {imgError ? (
+                  <div style={{
+                    position: "absolute", inset: 0,
+                    display: "flex", flexDirection: "column",
+                    alignItems: "center", justifyContent: "center",
+                    gap: 10, padding: "0 2rem", textAlign: "center",
+                    background: "#0c0c0c", color: TEXT_MUTED, fontFamily: MONO, fontSize: 13,
+                  }}>
+                    <div style={{ color: TEXT }}>Screenshot not found</div>
+                    <div>Add <span style={{ color: ACCENT }}>{image}</span> to display it here.</div>
+                    <button
+                      onClick={openTab}
+                      style={{
+                        marginTop: 6, padding: "8px 16px", cursor: "pointer",
+                        background: ACCENT, color: "#111", border: "none", borderRadius: 6,
+                        fontFamily: MONO, fontWeight: 700, fontSize: 12,
+                      }}
+                    >Open live site ↗</button>
+                  </div>
+                ) : (
+                  <img
+                    src={image}
+                    alt={label || url}
+                    onClick={openTab}
+                    onError={() => setImgError(true)}
+                    title={`Open ${display} in a new tab`}
+                    style={{ width: "100%", height: "auto", display: "block", cursor: "pointer" }}
+                  />
+                )}
+                {!imgError && (
+                  <div style={{
+                    position: "absolute", right: 14, bottom: 14,
+                    padding: "5px 11px", borderRadius: 999,
+                    background: "rgba(12,12,12,0.78)", color: "#fff",
+                    fontFamily: MONO, fontSize: 11, letterSpacing: 0.3,
+                    pointerEvents: "none", backdropFilter: "blur(4px)",
+                  }}>
+                    Screenshot · click to open live ↗
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ flex: 1, minHeight: 0, position: "relative", background: "#fff" }}>
+                <iframe
+                  ref={iframeRef}
+                  src={url}
+                  title={label || url}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  style={{
+                    position: "absolute", inset: 0,
+                    width: "100%", height: "100%",
+                    border: "none", display: "block", background: "#fff",
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 1 · TITLE
+    // =====================================================
+    function TitleSlide() {
+      return (
+        <SlideShell>
+          {/* Faint mountain ridge backdrop */}
+          <div style={{
+            position: "absolute",
+            left: 0, right: 0, bottom: "12vh",
+            display: "flex", justifyContent: "center",
+            pointerEvents: "none", zIndex: 0,
+          }}>
+            <svg viewBox="0 0 320 90" width="92%" aria-hidden="true"
+                 style={{ opacity: 0.18, maxWidth: 1280 }}>
+              <path d="M0 78 L80 30 L130 56 L200 18 L260 50 L320 78 Z"
+                    fill="none" stroke={ACCENT} strokeWidth="1.2"
+                    strokeLinejoin="round" opacity="0.55" />
+              <path d="M0 82 L60 50 L110 70 L170 38 L230 64 L320 82"
+                    fill="none" stroke={ACCENT} strokeWidth="1.6" strokeLinejoin="round" />
+              <path d="M40 84 Q120 88 160 80 T280 86"
+                    fill="none" stroke={ACCENT} strokeWidth="1.2"
+                    strokeDasharray="3 4" opacity="0.7" />
+              <circle cx="240" cy="22" r="6" fill={ACCENT} opacity="0.5" />
+            </svg>
+          </div>
+
+          {/* Text stack */}
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <Eyebrow>Frontier Creatives · Pioneer Square Labs · Jun 9, 2026</Eyebrow>
+            <h1 style={{
+              fontSize: "clamp(3rem, 6.2vw, 5.8rem)",
+              lineHeight: 1.0,
+              letterSpacing: "-0.03em",
+              color: TEXT,
+              margin: "0 0 1rem 0",
+              fontWeight: 700,
+            }}>
+              Evolving Agentic Workflows
+            </h1>
+            <p style={{
+              fontSize: "clamp(1.3rem, 2.1vw, 1.95rem)",
+              color: ACCENT,
+              margin: "0 0 1.6rem 0",
+              lineHeight: 1.2,
+              fontFamily: SERIF_ITALIC,
+              fontStyle: "italic",
+              fontWeight: 400,
+              letterSpacing: "-0.01em",
+            }}>
+              Design thinking, rebuilt for agents.
+            </p>
+            <div style={{
+              fontSize: "clamp(0.9rem, 1.2vw, 1.1rem)",
+              color: TEXT_MUTED,
+              lineHeight: 1.8,
+              fontWeight: 500,
+              letterSpacing: 0.2,
+            }}>
+              <div>No playbook yet, so I built mine into a product.</div>
+            </div>
+          </div>
+
+          {/* Speaker block, anchored bottom-right */}
+          <div style={{
+            position: "absolute",
+            bottom: 64,
+            right: 44,
+            display: "flex",
+            alignItems: "center",
+            gap: 18,
+            zIndex: 5,
+          }}>
+            <img
+              src="images/MKrejci - CircleAvatar - WhiteBorder.png"
+              alt="Marc Krejci"
+              style={{
+                width: 84,
+                height: 84,
+                borderRadius: "50%",
+                display: "block",
+                flexShrink: 0,
+                boxShadow: `0 0 0 2px ${ACCENT_DIM}, 0 6px 20px rgba(0,0,0,0.35)`,
+              }}
+            />
+            <div style={{
+              borderLeft: `2px solid ${ACCENT}`,
+              paddingLeft: 16,
+              display: "flex",
+              flexDirection: "column",
+              gap: 3,
+            }}>
+              <div style={{
+                fontSize: "1.1rem",
+                color: TEXT,
+                fontWeight: 700,
+                letterSpacing: "-0.01em",
+                lineHeight: 1.2,
+              }}>
+                Marc Krejci
+              </div>
+              <div style={{
+                fontSize: "0.76rem",
+                color: TEXT_MUTED,
+                fontWeight: 500,
+                letterSpacing: 1.5,
+                textTransform: "uppercase",
+              }}>
+                Pathfinder Foundry
+              </div>
+            </div>
+          </div>
+        </SlideShell>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 1b · THE SHIFT  (per Marc's sketch)
+    // Each reach tier on a SOLO -> FULL XFN scale, with 2016 vs 2026 markers.
+    // Markers drift left as you go down the tiers: fewer builders needed now,
+    // most dramatically for scalable (1:Many) products.
+    // TODO(marc): tune marker positions; likely animate 2016 -> 2026 live in the talk.
+    // =====================================================
+    function SlideReachShift() {
+      const tiers = [
+        {
+          ratio: "1:1",
+          name: "Personal Software",
+          desc: "Personal software you build for yourself. The only experience that matters is your own.",
+          then: 46,
+          now: 5,
+        },
+        {
+          ratio: "1:Few",
+          name: "Niche Tool",
+          desc: "A shared utility for a known group, where feedback is direct and relationships matter.",
+          then: 58,
+          now: 18,
+        },
+        {
+          ratio: "1:Many",
+          name: "Scalable Product",
+          desc: "Software that works without you, for users you'll never meet, at a scale you can't manage alone.",
+          then: 91,
+          now: 37,
+        },
+      ];
+
+      const Marker = ({ pct, year, now }) => (
+        // Outer box is the dot itself, centered exactly on the track line.
+        <div style={{
+          position: "absolute",
+          left: `${pct}%`,
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 15,
+          height: 15,
+          borderRadius: "50%",
+          background: now ? ACCENT : "transparent",
+          border: `2px solid ${now ? ACCENT : TEXT_MUTED}`,
+          boxSizing: "border-box",
+          boxShadow: now ? `0 0 0 5px ${ACCENT_SOFT}` : "none",
+          zIndex: 2,
+        }}>
+          {/* Year label floats above the dot without shifting it off-center. */}
+          <div style={{
+            position: "absolute",
+            bottom: "calc(100% + 8px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: "0.62rem",
+            fontFamily: MONO,
+            fontWeight: 700,
+            letterSpacing: 1,
+            color: now ? ACCENT : TEXT_MUTED,
+            whiteSpace: "nowrap",
+          }}>
+            {year}
+          </div>
+        </div>
+      );
+
+      const EndLabel = ({ children, dim }) => (
+        <span style={{
+          fontFamily: MONO,
+          fontSize: "0.72rem",
+          fontWeight: 700,
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          color: dim ? TEXT_MUTED : TEXT,
+          flexShrink: 0,
+        }}>
+          {children}
+        </span>
+      );
+
+      return (
+        <SlideShell dense>
+          <Eyebrow>The Shift</Eyebrow>
+          <SlideTitle>How many people does it take?</SlideTitle>
+
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "min(2.8vh, 26px)",
+            marginTop: "1.2rem",
+          }}>
+            {tiers.map((t) => (
+              <div key={t.ratio} style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(260px, 33%) 1fr",
+                gap: "min(3vw, 44px)",
+                alignItems: "center",
+              }}>
+                {/* Left: reach tier card */}
+                <div style={{
+                  background: CARD_BG,
+                  border: `1px solid ${CARD_BORDER}`,
+                  borderLeft: `3px solid ${ACCENT}`,
+                  borderRadius: 12,
+                  padding: "0.85rem 1.1rem",
+                }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: "clamp(1.05rem, 1.6vw, 1.4rem)", color: ACCENT }}>
+                      {t.ratio}
+                    </span>
+                    <span style={{ fontWeight: 700, fontSize: "clamp(0.95rem, 1.2vw, 1.12rem)", color: TEXT }}>
+                      {t.name}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: "clamp(0.76rem, 0.95vw, 0.9rem)", color: TEXT_MUTED, lineHeight: 1.45 }}>
+                    {t.desc}
+                  </p>
+                </div>
+
+                {/* Right: SOLO -> FULL XFN scale */}
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <EndLabel>Solo</EndLabel>
+                  <div style={{ position: "relative", flex: 1, height: 44 }}>
+                    <div style={{
+                      position: "absolute", left: 0, right: 0, top: "50%",
+                      height: 2, background: "rgba(255,255,255,0.22)", transform: "translateY(-50%)",
+                    }} />
+                    <Marker pct={t.then} year="2016" now={false} />
+                    <Marker pct={t.now} year="2026" now={true} />
+                  </div>
+                  <EndLabel dim>Full XFN</EndLabel>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Legend */}
+          <div style={{ display: "flex", alignItems: "center", gap: 22, marginTop: "1.7rem", flexWrap: "wrap" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: "0.7rem", color: ACCENT }}>
+              <span style={{ width: 12, height: 12, borderRadius: "50%", background: ACCENT, display: "inline-block" }} /> 2026, today
+            </span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: MONO, fontSize: "0.7rem", color: TEXT_MUTED }}>
+              <span style={{ width: 12, height: 12, borderRadius: "50%", border: `2px solid ${TEXT_MUTED}`, boxSizing: "border-box", display: "inline-block" }} /> 2016, a decade ago
+            </span>
+          </div>
+        </SlideShell>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 2 · METHODOLOGY LINEAGE
+    // =====================================================
+    // =====================================================
+    // IMAGE EXPAND OVERLAY · reusable for Slide 2
+    // =====================================================
+    function ImageOverlay({ src, alt, onClose }) {
+      const [closing, setClosing] = useState(false);
+
+      const handleClose = useCallback(() => {
+        setClosing(true);
+        setTimeout(() => onClose(), 240);
+      }, [onClose]);
+
+      useEffect(() => {
+        const handler = (e) => { if (e.key === "Escape") handleClose(); };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+      }, [handleClose]);
+
+      if (!src) return null;
+
+      const EASING_IN  = "cubic-bezier(0.16, 1, 0.3, 1)";   // smooth decelerate, natural pop
+      const EASING_OUT = "cubic-bezier(0.4, 0, 1, 1)";       // accelerate into close
+
+      return (
+        /* Full-screen scrim, blurred backdrop */
+        <div
+          onClick={handleClose}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 400,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "5vh 7vw",
+            cursor: "zoom-out",
+            backdropFilter: "blur(22px) saturate(140%)",
+            WebkitBackdropFilter: "blur(22px) saturate(140%)",
+            background: closing ? "rgba(0,0,0,0)" : "rgba(0,0,0,0.62)",
+            animation: closing
+              ? `pf-scrimOut 240ms ${EASING_OUT} forwards`
+              : `pf-scrimIn  300ms ${EASING_IN}  forwards`,
+          }}
+        >
+          {/* Liquid-glass panel, animates scale + opacity */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "relative",
+              maxWidth: "78vw",
+              maxHeight: "84vh",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "1.1rem",
+              padding: "1.6rem 1.8rem 1.4rem",
+              /* Liquid glass core */
+              background: "rgba(16, 16, 16, 0.68)",
+              backdropFilter: "blur(52px) saturate(180%)",
+              WebkitBackdropFilter: "blur(52px) saturate(180%)",
+              borderRadius: 20,
+              /* Subtle glass border: top highlight + ambient edge */
+              border: "1px solid rgba(255,255,255,0.13)",
+              boxShadow: [
+                "0 0 0 0.5px rgba(0,0,0,0.5)",                      /* outer crisp edge */
+                "0 36px 80px rgba(0,0,0,0.65)",                      /* depth shadow */
+                "inset 0  1px 0   rgba(255,255,255,0.14)",           /* top specular */
+                "inset 0 -1px 0   rgba(0,0,0,0.28)",                 /* bottom inner shadow */
+                `inset 0 0 40px rgba(255,204,100,0.03)`,             /* warm accent tint */
+              ].join(", "),
+              animation: closing
+                ? `pf-imgOut 240ms ${EASING_OUT} forwards`
+                : `pf-imgIn  320ms ${EASING_IN}  forwards`,
+            }}
+          >
+            {/* Close hint + label row */}
+            <div style={{
+              display: "flex",
+              width: "100%",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
+              <div style={{
+                fontSize: "0.72rem",
+                letterSpacing: 2.2,
+                color: ACCENT,
+                fontWeight: 700,
+                textTransform: "uppercase",
+              }}>
+                {alt}
+              </div>
+              <div style={{
+                fontSize: "0.6rem",
+                letterSpacing: 2,
+                color: TEXT_MUTED,
+                textTransform: "uppercase",
+                fontWeight: 600,
+                opacity: 0.65,
+              }}>
+                Esc to close
+              </div>
+            </div>
+
+            {/* Image on a solid dark surface, no PNG bleed-through */}
+            <div style={{
+              background: "#0a0a0a",
+              borderRadius: 12,
+              overflow: "hidden",
+              maxWidth: "100%",
+              maxHeight: "72vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}>
+              <img
+                src={src}
+                alt={alt}
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "72vh",
+                  objectFit: "contain",
+                  display: "block",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function Slide2Lineage() {
+      const [expanded, setExpanded] = useState(null); // { src, alt } | null
+
+      const methods = [
+        {
+          name: "Double Diamond",
+          era: "1990's",
+          desc: "Diverge. Converge. Repeat.",
+          img: "images/DoubleDiamond.png",
+        },
+        {
+          name: "Stingray",
+          era: "2010's",
+          desc: "Tighter constraints. Faster feedback.",
+          img: "images/StingrayModel.png",
+        },
+        {
+          name: "ProtoVibing",
+          era: "2025 +",
+          desc: "An agent for every job. You stay in the decisions.",
+          img: "images/ProtoVibingLoop.png",
+          highlight: true,
+        },
+      ];
+
+      return (
+        <SlideShell dense>
+          <Eyebrow>The Lineage</Eyebrow>
+          <SlideTitle>Design has always been a loop</SlideTitle>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto 1fr auto 1fr",
+            alignItems: "center",
+            gap: "min(1.8vw, 18px)",
+            marginTop: "0.8rem",
+          }}>
+            {methods.map((m, i) => (
+              <React.Fragment key={m.name}>
+                <div style={{
+                  padding: "1.3rem 1.2rem",
+                  background: m.highlight ? ACCENT_SOFT : CARD_BG,
+                  border: `1.5px solid ${m.highlight ? ACCENT : CARD_BORDER}`,
+                  borderRadius: 14,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.85rem",
+                }}>
+                  {/* Clickable image thumbnail */}
+                  <div
+                    onClick={() => setExpanded({ src: m.img, alt: m.name })}
+                    title={`Expand ${m.name} diagram`}
+                    style={{
+                      height: 88,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      background: "rgba(255,255,255,0.03)",
+                      padding: "0.4rem",
+                      cursor: "zoom-in",
+                      transition: "background 150ms, border-color 150ms",
+                      border: "1px solid transparent",
+                      position: "relative",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,204,100,0.07)";
+                      e.currentTarget.style.borderColor = ACCENT_DIM;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                      e.currentTarget.style.borderColor = "transparent";
+                    }}
+                  >
+                    <img
+                      src={m.img}
+                      alt={m.name}
+                      style={{
+                        maxHeight: "100%",
+                        maxWidth: "100%",
+                        objectFit: "contain",
+                        opacity: m.highlight ? 1 : 0.72,
+                        filter: m.highlight ? "none" : "grayscale(35%)",
+                        pointerEvents: "none",
+                      }}
+                    />
+                    {/* Expand hint icon */}
+                    <div style={{
+                      position: "absolute",
+                      bottom: 4,
+                      right: 5,
+                      opacity: 0.45,
+                    }}>
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                           stroke={ACCENT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 3 15 9 9 9" />
+                        <polyline points="1 13 1 7 7 7" />
+                        <line x1="15" y1="3" x2="8" y2="10" />
+                        <line x1="1" y1="13" x2="8" y2="6" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{
+                      fontSize: "0.66rem",
+                      letterSpacing: 2.2,
+                      color: m.highlight ? ACCENT : TEXT_MUTED,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      marginBottom: 4,
+                    }}>
+                      {m.era}
+                    </div>
+                    <div style={{
+                      fontSize: "clamp(1.1rem, 1.55vw, 1.4rem)",
+                      color: TEXT,
+                      fontWeight: 700,
+                      lineHeight: 1.15,
+                      marginBottom: 6,
+                    }}>
+                      {m.name}
+                    </div>
+                    <div style={{
+                      fontSize: "clamp(0.85rem, 1.05vw, 0.98rem)",
+                      color: m.highlight ? ACCENT : TEXT_MUTED,
+                      lineHeight: 1.45,
+                      fontStyle: m.highlight ? "italic" : "normal",
+                      fontFamily: m.highlight ? SERIF_ITALIC : FONT_STACK,
+                    }}>
+                      {m.desc}
+                    </div>
+                  </div>
+                </div>
+
+                {i < methods.length - 1 && <FlowArrow />}
+              </React.Fragment>
+            ))}
+          </div>
+
+          <p style={{
+            margin: "1.4rem 0 0 0",
+            fontFamily: SERIF_ITALIC,
+            fontStyle: "italic",
+            fontSize: "clamp(0.95rem, 1.3vw, 1.2rem)",
+            color: ACCENT,
+            opacity: 0.82,
+            letterSpacing: 0.3,
+          }}>
+            The discipline is hypothesis-driven prototyping. Agentic AI compressed a cycle from days to minutes.
+          </p>
+
+          {/* Image expand overlay */}
+          {expanded && (
+            <ImageOverlay
+              src={expanded.src}
+              alt={expanded.alt}
+              onClose={() => setExpanded(null)}
+            />
+          )}
+        </SlideShell>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 3 · THE 3-STEP STORY
+    // =====================================================
+    // Small bottom-right link on each step card. With a url it opens the
+    // fullscreen browser-chrome overlay; without one it's a dim placeholder.
+    function StepLiveLink({ url, label, image, cta }) {
+      const overlayCtx = React.useContext(BrowserOverlayContext);
+      const [hover, setHover] = useState(false);
+      const live = Boolean(url);
+      return (
+        <button
+          onClick={(e) => { e.stopPropagation(); if (live) overlayCtx.open(url, label, image); }}
+          disabled={!live}
+          title={live ? `Open ${url}` : "Add a live URL"}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            border: "none",
+            background: "transparent",
+            padding: 0,
+            cursor: live ? "pointer" : "default",
+            fontFamily: MONO,
+            fontSize: "0.66rem",
+            letterSpacing: 1.6,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            color: live ? ACCENT : TEXT_DIM,
+            opacity: live ? (hover ? 1 : 0.85) : 0.5,
+            textDecoration: live && hover ? "underline" : "none",
+            textUnderlineOffset: 3,
+            transition: "opacity 120ms",
+          }}
+        >
+          {live ? (cta || "View live") : "Link TBD"}
+          <BrowserExpandIcon />
+        </button>
+      );
+    }
+
+    function Slide3Steps() {
+      const steps = [
+        {
+          num: "01",
+          label: "Custom GPT Agents",
+          desc: "One agent per job. Run manually with clients, copy-pasting between steps.",
+          role: "I was the glue.",
+          url: "https://pfndr.co/gpt-discovery",
+          linkLabel: "Demo Agent",
+          image: "images/demo-agent.png",
+          cta: "Multiple agents",
+        },
+        {
+          num: "02",
+          label: "Claude Skill",
+          desc: "Bundled every agent into one chain. One prompt ran the whole sequence.",
+          role: "Claude became the orchestrator.",
+          url: "https://claude.ai/customize/plugins/protovibing%40My%20Uploads",
+          linkLabel: "Preview Setup",
+          image: "images/preview-setup.png",
+          cta: "Preview the setup",
+        },
+        {
+          num: "03",
+          label: "ProtoVibing",
+          desc: "The whole loop in one app. No copy-paste, no glue work, anyone can run it.",
+          role: "The workflow became the product.",
+          highlight: true,
+          url: "https://protovibing.ai",
+          cta: "Learn more",
+        },
+      ];
+
+      return (
+        <SlideShell dense>
+          <Eyebrow>The Build</Eyebrow>
+          <SlideTitle>The Human-Driven Agentic Flywheel</SlideTitle>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto 1fr auto 1fr",
+            alignItems: "start",
+            gap: "min(2.6vw, 32px)",
+            marginTop: "2.2rem",
+          }}>
+            {steps.map((step, i) => (
+              <React.Fragment key={step.num}>
+                <Card style={{
+                  background: step.highlight ? ACCENT_SOFT : CARD_BG,
+                  borderTop:    `3px solid ${ACCENT}`,
+                  borderRight:  `1.5px solid ${step.highlight ? ACCENT : CARD_BORDER}`,
+                  borderBottom: `1.5px solid ${step.highlight ? ACCENT : CARD_BORDER}`,
+                  borderLeft:   `1.5px solid ${step.highlight ? ACCENT : CARD_BORDER}`,
+                  padding: "1.7rem 1.6rem 1.5rem",
+                  display: "flex",
+                  flexDirection: "column",
+                }}>
+                  <div style={{
+                    fontSize: "0.68rem",
+                    letterSpacing: 2.4,
+                    color: ACCENT,
+                    fontWeight: 700,
+                    marginBottom: "0.9rem",
+                  }}>
+                    {step.num}
+                  </div>
+                  <div style={{
+                    fontSize: "clamp(1.15rem, 1.7vw, 1.5rem)",
+                    color: TEXT,
+                    fontWeight: 700,
+                    lineHeight: 1.15,
+                    marginBottom: "0.85rem",
+                  }}>
+                    {step.label}
+                  </div>
+                  <p style={{
+                    fontSize: "clamp(0.85rem, 1.05vw, 0.98rem)",
+                    color: TEXT_MUTED,
+                    margin: "0 0 1.1rem 0",
+                    lineHeight: 1.55,
+                  }}>
+                    {step.desc}
+                  </p>
+                  <div style={{
+                    fontSize: "clamp(0.9rem, 1.1vw, 1.02rem)",
+                    color: step.highlight ? ACCENT : TEXT_DIM,
+                    fontFamily: SERIF_ITALIC,
+                    fontStyle: "italic",
+                    lineHeight: 1.4,
+                  }}>
+                    {step.role}
+                  </div>
+
+                  {/* Bottom-right link → opens fullscreen browser chrome for a live URL */}
+                  <div style={{
+                    marginTop: "1.5rem",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                  }}>
+                    <StepLiveLink url={step.url} label={step.linkLabel || step.label} image={step.image} cta={step.cta} />
+                  </div>
+                </Card>
+
+                {i < steps.length - 1 && (
+                  <div style={{ alignSelf: "center", display: "flex" }}>
+                    <FlowArrow />
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          <div style={{
+            marginTop: "3.2rem",
+            borderLeft: `3px solid ${ACCENT}`,
+            paddingLeft: "1.2rem",
+          }}>
+            <p style={{
+              fontSize: "clamp(1rem, 1.4vw, 1.28rem)",
+              color: ACCENT,
+              margin: "0 0 0.4rem",
+              fontFamily: SERIF_ITALIC,
+              fontStyle: "italic",
+              lineHeight: 1.45,
+            }}>
+              "First, Do Things That Don't Scale"
+            </p>
+            <div style={{
+              fontSize: "0.72rem",
+              letterSpacing: 1.8,
+              color: TEXT_MUTED,
+              textTransform: "uppercase",
+              fontWeight: 600,
+              fontStyle: "normal",
+              fontFamily: "inherit",
+            }}>
+              Paul Graham
+            </div>
+          </div>
+        </SlideShell>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 4 · THE TRAP  (vibe-coding straight to a "solution")
+    // Tidy fantasy vs a longer, grimmer reality; hero $29.5B stat; "build less" lesson.
+    // =====================================================
+    function SlideVibeTrap() {
+      const Chip = ({ children, tone = "muted", solid = false, emph = false }) => {
+        const border = tone === "accent" ? ACCENT : (emph ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.28)");
+        const text = solid ? "#111" : (tone === "accent" ? TEXT : (emph ? TEXT : "rgba(245,245,245,0.8)"));
+        return (
+          <div style={{
+            padding: "0.6rem 0.95rem",
+            borderRadius: 10,
+            border: `1.5px solid ${border}`,
+            background: solid ? ACCENT : "rgba(255,255,255,0.04)",
+            color: text,
+            fontWeight: solid ? 700 : 600,
+            fontSize: "clamp(0.82rem, 1.05vw, 1.02rem)",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}>
+            {children}
+          </div>
+        );
+      };
+
+      const Arrow = ({ tone }) => (
+        <span style={{ color: tone === "accent" ? ACCENT : "rgba(255,255,255,0.35)", fontSize: "1.15rem", flexShrink: 0, lineHeight: 1 }}>
+          &#8594;
+        </span>
+      );
+
+      const Row = ({ children }) => (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.7rem", flexWrap: "wrap" }}>{children}</div>
+      );
+
+      const Label = ({ tone, children }) => (
+        <div style={{
+          fontSize: "0.64rem", letterSpacing: 2, fontWeight: 700, textTransform: "uppercase",
+          color: tone === "accent" ? ACCENT : TEXT_MUTED, marginBottom: "0.6rem",
+        }}>
+          {children}
+        </div>
+      );
+
+      return (
+        <SlideShell dense>
+          <Eyebrow>The Trap</Eyebrow>
+          <SlideTitle>Why not just vibe-code it?</SlideTitle>
+
+          {/* Tidy fantasy vs longer, grimmer reality */}
+          <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "1.3rem" }}>
+            <div>
+              <Label tone="accent">What it feels like</Label>
+              <Row>
+                <Chip tone="accent">A rough idea</Chip>
+                <Arrow tone="accent" />
+                <Chip tone="accent">One big prompt</Chip>
+                <Arrow tone="accent" />
+                <Chip tone="accent" solid>A working app + customers</Chip>
+              </Row>
+            </div>
+            <div>
+              <Label tone="muted">What actually happens</Label>
+              <Row>
+                <Chip tone="muted">Build on guesses</Chip>
+                <Arrow tone="muted" />
+                <Chip tone="muted">Brittle &amp; insecure</Chip>
+                <Arrow tone="muted" />
+                <Chip tone="muted">Nobody wanted it</Chip>
+                <Arrow tone="muted" />
+                <Chip tone="muted">Rebuild</Chip>
+                <Arrow tone="muted" />
+                <Chip tone="muted" emph>Out of runway</Chip>
+              </Row>
+            </div>
+          </div>
+
+          {/* Hero stat + the lesson */}
+          <div style={{
+            marginTop: "2rem",
+            paddingTop: "1.6rem",
+            borderTop: `1px solid ${CARD_BORDER}`,
+            display: "grid",
+            gridTemplateColumns: "1.1fr 0.9fr",
+            gap: "min(5vw, 60px)",
+            alignItems: "center",
+          }}>
+            {/* The proof */}
+            <div>
+              <div style={{ fontSize: "clamp(3.2rem, 7vw, 5.6rem)", fontWeight: 700, color: ACCENT, lineHeight: 0.92, letterSpacing: "-0.025em" }}>
+                $29.5B
+              </div>
+              <div style={{ fontSize: "clamp(1rem, 1.4vw, 1.3rem)", color: TEXT, fontWeight: 600, marginTop: "0.55rem" }}>
+                wasted on features rarely or never used
+              </div>
+              <div style={{ fontSize: "0.86rem", color: TEXT_MUTED, marginTop: "0.5rem" }}>
+                Only 6.4% of features see regular use.
+              </div>
+              <div style={{ fontSize: "0.62rem", color: TEXT_DIM, fontFamily: MONO, letterSpacing: 0.3, marginTop: "0.9rem" }}>
+                Source: Pendo, 2019 Feature Adoption Report; 2024 Product Benchmarks
+              </div>
+            </div>
+
+            {/* The lesson */}
+            <div style={{ borderLeft: `3px solid ${ACCENT}`, paddingLeft: "1.3rem" }}>
+              <p style={{ fontSize: "clamp(1.3rem, 2.1vw, 2rem)", color: TEXT, fontWeight: 700, lineHeight: 1.15, margin: 0, letterSpacing: "-0.01em" }}>
+                Build less.
+              </p>
+              <p style={{ fontSize: "clamp(1.3rem, 2.1vw, 2rem)", color: ACCENT, fontWeight: 700, lineHeight: 1.15, margin: "0.2rem 0 0", letterSpacing: "-0.01em" }}>
+                Build only what gets used.
+              </p>
+            </div>
+          </div>
+        </SlideShell>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 4 · THE PROTOVIBING LOOP (visual)
+    // =====================================================
+    function Slide4Loop() {
+      const stages = [
+        { label: "Idea",   detail: "Sharpen the bet." },
+        { label: "Plan",   detail: "Find the signal in the noise." },
+        { label: "Create", detail: "Build only what you'll test." },
+        { label: "Test",   detail: "Talk to actual humans." },
+      ];
+
+      // "highlight" = one box lit up; "travel" = arc animating, no box lit
+      const [phase, setPhase] = useState("highlight");
+      const [activeIdx, setActiveIdx] = useState(0);
+      const [travelCount, setTravelCount] = useState(0); // key to force arc remount
+
+      useEffect(() => {
+        const id = setTimeout(() => {
+          if (phase === "highlight") {
+            if (activeIdx === 3) {
+              // Test just finished, unhighlight it and run the arc
+              setActiveIdx(-1);
+              setTravelCount(c => c + 1);
+              setPhase("travel");
+            } else {
+              setActiveIdx(i => i + 1);
+            }
+          } else {
+            // Arc done, back to Idea
+            setActiveIdx(0);
+            setPhase("highlight");
+          }
+        }, 1500);
+        return () => clearTimeout(id);
+      }, [phase, activeIdx]);
+
+      // Arc path anchored to Idea (~12.5%) and Test (~87.5%) box centers
+      const ARC = "M 875 6 L 875 40 Q 875 50 862 50 L 138 50 Q 125 50 125 40 L 125 6";
+
+      return (
+        <SlideShell dense>
+          <Eyebrow>The Loop</Eyebrow>
+          <SlideTitle>Finding PMF Without Guessing</SlideTitle>
+
+          <div style={{ marginTop: "1rem" }}>
+            {/* Stage nodes row */}
+            <div style={{ display: "flex", alignItems: "stretch", gap: "min(2.4vw, 28px)" }}>
+              {stages.map((stage, i) => {
+                const isActive = phase === "highlight" && i === activeIdx;
+                return (
+                  <React.Fragment key={stage.label}>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{
+                        width: "100%",
+                        padding: "1.2rem 0.9rem 1.3rem",
+                        background: isActive ? ACCENT_SOFT : CARD_BG,
+                        border: `1.5px solid ${isActive ? ACCENT : CARD_BORDER}`,
+                        borderRadius: 12,
+                        textAlign: "center",
+                        transition: "background 400ms ease, border-color 400ms ease, box-shadow 400ms ease",
+                        boxShadow: isActive ? "0 0 28px rgba(255,204,100,0.13)" : "none",
+                      }}>
+                        <div style={{
+                          fontSize: "0.6rem",
+                          letterSpacing: 2.5,
+                          color: ACCENT,
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          marginBottom: 6,
+                          opacity: 0.75,
+                        }}>
+                          {`0${i + 1}`}
+                        </div>
+                        <div style={{
+                          fontSize: "clamp(1.1rem, 1.6vw, 1.45rem)",
+                          color: TEXT,
+                          fontWeight: 700,
+                          lineHeight: 1.15,
+                          marginBottom: 6,
+                        }}>
+                          {stage.label}
+                        </div>
+                        <div style={{
+                          fontSize: "clamp(0.72rem, 0.88vw, 0.84rem)",
+                          color: TEXT_MUTED,
+                          lineHeight: 1.4,
+                        }}>
+                          {stage.detail}
+                        </div>
+                      </div>
+                    </div>
+
+                    {i < stages.length - 1 && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        width: 28,
+                        paddingBottom: "0.6rem",
+                      }}>
+                        <svg width="20" height="12" viewBox="0 0 20 12">
+                          <line x1="0" y1="6" x2="14" y2="6"
+                                stroke={ACCENT} strokeWidth="1.4" strokeOpacity="0.5" />
+                          <polyline points="10,2 16,6 10,10" fill="none"
+                                    stroke={ACCENT} strokeWidth="1.4" strokeOpacity="0.5"
+                                    strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+
+            {/* Return arc */}
+            <div style={{ position: "relative", height: 56, marginTop: 2 }}>
+              <svg
+                width="100%"
+                height="56"
+                viewBox="0 0 1000 56"
+                preserveAspectRatio="none"
+                style={{ overflow: "visible", display: "block" }}
+              >
+                {/* Static dashed background arc, centered under Idea & Test boxes */}
+                <path
+                  d={ARC}
+                  fill="none"
+                  stroke={ACCENT}
+                  strokeWidth="1.8"
+                  strokeOpacity="0.18"
+                  strokeDasharray="6 5"
+                />
+                {/* Traveling particle, only fires once after Test, then stops */}
+                <path
+                  key={travelCount}
+                  d={ARC}
+                  fill="none"
+                  stroke={ACCENT}
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeDasharray="12 840"
+                  strokeOpacity={phase === "travel" ? 0.72 : 0}
+                  style={{ animation: phase === "travel" ? "pf-loopTravel 1.5s linear forwards" : "none" }}
+                />
+                {/* Arrowhead at Idea (left) end */}
+                <polyline
+                  points="116,18 125,6 134,18"
+                  fill="none"
+                  stroke={ACCENT}
+                  strokeWidth="1.8"
+                  strokeOpacity="0.52"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Loop-back label, below the spark line with breathing room */}
+          <div style={{
+            marginTop: "1.8rem",
+            textAlign: "center",
+            fontSize: "0.74rem",
+            letterSpacing: 3.5,
+            color: ACCENT,
+            fontWeight: 700,
+            textTransform: "uppercase",
+          }}>
+            Synthesize and repeat
+          </div>
+        </SlideShell>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 5 · DEMO, Live browser preview of protovibing.ai
+    // =====================================================
+    function Slide5Demo() {
+      return (
+        <div style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          padding: "9vh 4vw 0",
+          boxSizing: "border-box",
+          textAlign: "center",
+        }}>
+          {/* Eyebrow */}
+          <div style={{
+            fontSize: "0.78rem",
+            letterSpacing: 2.4,
+            color: ACCENT,
+            fontWeight: 700,
+            marginBottom: "1rem",
+            textTransform: "uppercase",
+          }}>
+            Live Demo · 3-4 min
+          </div>
+
+          {/* Title */}
+          <h1 style={{
+            fontSize: "clamp(2rem, 4.2vw, 4rem)",
+            lineHeight: 1.05,
+            letterSpacing: "-0.022em",
+            color: TEXT,
+            margin: "0 0 0.55rem 0",
+            fontWeight: 700,
+            maxWidth: "90%",
+          }}>
+            ProtoVibing
+          </h1>
+
+          {/* Italic tagline */}
+          <p style={{
+            fontSize: "clamp(1.05rem, 1.55vw, 1.45rem)",
+            color: ACCENT,
+            margin: "0 0 2.2vh 0",
+            lineHeight: 1.35,
+            fontFamily: SERIF_ITALIC,
+            fontStyle: "italic",
+            fontWeight: 400,
+            maxWidth: "60%",
+          }}>
+            hypothesis-driven prototyping, end to end
+          </p>
+
+          {/* Narrower-than-page, bleed-off-bottom browser preview */}
+          <div style={{
+            width: "min(72%, 1180px)",
+            height: "90vh",
+            flexShrink: 0,
+          }}>
+            <BrowserPreviewCard
+              url="https://app.protovibing.ai/projects/therapist-buddy-nhstcdri"
+              label="ProtoVibing"
+              tagline="hypothesis-driven prototyping, end to end"
+              image="images/therapist-buddy.png"
+              showHeader={false}
+              fill
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 6b · GARDENING, NOT ARCHITECTURE (iteration mindset)
+    // =====================================================
+    function SlideGardening() {
+      const PHOTO = "min(40vw, 60vh, 540px)";
+      return (
+        <SlideShell>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "min(5vw, 72px)",
+            width: "100%",
+          }}>
+            {/* Left: photo enclosed in a container (mirrors away from the Maven slide's right-side image) */}
+            <figure style={{ margin: 0, flexShrink: 0 }}>
+              <div style={{
+                width: PHOTO,
+                height: PHOTO,
+                borderRadius: 18,
+                overflow: "hidden",
+                background: "#0a0a0a",
+                border: `1.5px solid ${CARD_BORDER}`,
+                boxShadow: `0 0 0 1px ${ACCENT_DIM}, 0 24px 70px rgba(0,0,0,0.55)`,
+              }}>
+                <img
+                  src="images/live-jazz.jpeg"
+                  alt="Marc at a live jazz show"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              </div>
+              <figcaption style={{
+                marginTop: "0.75rem",
+                fontSize: "clamp(0.8rem, 1vw, 0.95rem)",
+                color: TEXT_MUTED,
+                fontFamily: SERIF_ITALIC,
+                fontStyle: "italic",
+                textAlign: "left",
+                lineHeight: 1.4,
+              }}>
+                Me, performing with Jazz Night School a few months ago.
+              </figcaption>
+            </figure>
+
+            {/* Right: headline + metaphor */}
+            <div style={{ flex: "1 1 0", minWidth: 0 }}>
+              <Eyebrow>The Mindset</Eyebrow>
+              <h1 style={{
+                fontSize: "clamp(2.4rem, 4.8vw, 4.6rem)",
+                lineHeight: 1.03,
+                letterSpacing: "-0.025em",
+                color: TEXT,
+                margin: "0 0 1.4rem",
+                fontWeight: 700,
+              }}>
+                Gardening,<br />Not Architecture
+              </h1>
+
+              <p style={{
+                fontSize: "clamp(1.1rem, 1.5vw, 1.5rem)",
+                color: ACCENT,
+                margin: "0 0 1.7rem",
+                fontFamily: SERIF_ITALIC,
+                fontStyle: "italic",
+                lineHeight: 1.35,
+                maxWidth: 560,
+              }}>
+                You don't draw a blueprint and build once. You plant, tend, and prune, over and over.
+              </p>
+
+              <p style={{
+                fontSize: "clamp(0.98rem, 1.25vw, 1.18rem)",
+                color: TEXT_MUTED,
+                margin: "0 0 1.1rem",
+                lineHeight: 1.6,
+                maxWidth: 560,
+              }}>
+                Musicians write dozens of songs for a ten-track album. Most never make the cut, and that's the point. The discards are how you find the keepers.
+              </p>
+
+              <p style={{
+                fontSize: "clamp(0.98rem, 1.25vw, 1.18rem)",
+                color: TEXT,
+                margin: 0,
+                lineHeight: 1.6,
+                maxWidth: 560,
+              }}>
+                Building software is the same. Get comfortable iterating, and throwing away the ideas that don't work.
+              </p>
+            </div>
+          </div>
+        </SlideShell>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 7 · MAVEN CTA
+    // =====================================================
+    function Slide7Maven() {
+      return (
+        <div style={{
+          width: "100%",
+          height: "100%",
+          overflow: "hidden",
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+        }}>
+          {/* Left: text content, vertically centered */}
+          <div style={{
+            position: "relative",
+            zIndex: 2,
+            paddingLeft: "min(7vw, 96px)",
+            width: "44%",
+            flexShrink: 0,
+          }}>
+            <Eyebrow>PMF Without Guessing · Maven</Eyebrow>
+
+            <h1 style={{
+              fontSize: "clamp(2.8rem, 5vw, 4.8rem)",
+              lineHeight: 1.0,
+              letterSpacing: "-0.028em",
+              color: TEXT,
+              margin: "0 0 0.7rem",
+              fontWeight: 700,
+            }}>
+              Join the Cohort.
+            </h1>
+
+            <p style={{
+              fontSize: "clamp(1rem, 1.4vw, 1.28rem)",
+              color: TEXT_MUTED,
+              margin: "0 0 1.6rem",
+              lineHeight: 1.5,
+              maxWidth: 420,
+            }}>
+              Idea to validated prototype, step by step.
+            </p>
+
+            {/* $200 off promo strip */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              padding: "1rem 1.2rem",
+              background: ACCENT_SOFT,
+              border: `1.5px solid ${ACCENT}`,
+              borderRadius: 14,
+              maxWidth: 440,
+              marginBottom: "0.85rem",
+            }}>
+              <span style={{
+                fontSize: "clamp(1.5rem, 2.4vw, 2.1rem)",
+                fontWeight: 700,
+                color: ACCENT,
+                letterSpacing: "-0.02em",
+                lineHeight: 1,
+                flexShrink: 0,
+              }}>
+                $200 off
+              </span>
+              <div>
+                <div style={{
+                  fontSize: "0.66rem",
+                  letterSpacing: 2,
+                  color: TEXT_MUTED,
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                  marginBottom: 3,
+                }}>
+                  Limited-Time Promo code
+                </div>
+                <div style={{
+                  fontSize: "clamp(0.95rem, 1.35vw, 1.2rem)",
+                  color: TEXT,
+                  fontWeight: 700,
+                  letterSpacing: 2.2,
+                  fontFamily: MONO,
+                }}>
+                  PROTOVIBING
+                </div>
+              </div>
+            </div>
+
+            {/* URL hint */}
+            <div style={{
+              padding: "0.7rem 1rem",
+              background: CARD_BG,
+              border: `1px solid ${CARD_BORDER}`,
+              borderRadius: 10,
+              maxWidth: 440,
+            }}>
+              <span style={{
+                fontSize: "clamp(0.85rem, 1.05vw, 0.98rem)",
+                color: TEXT_MUTED,
+                fontFamily: MONO,
+                letterSpacing: 0.3,
+              }}>
+                pfndr.co/cohort · cohort starts July 29
+              </span>
+            </div>
+          </div>
+
+          {/* Right: transparent PNG, anchored to right edge, vertically centered */}
+          <img
+            src="images/MavenCohort.png"
+            alt="Maven Cohort, PMF Without Guessing, pfndr.co/cohort"
+            style={{
+              position: "absolute",
+              right: 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              height: "72vh",
+              width: "auto",
+              display: "block",
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          />
+        </div>
+      );
+    }
+
+    // =====================================================
+    // SLIDE 8 · PRE-BETA CLUB + SURVEY
+    // =====================================================
+    function Slide8PreBeta() {
+      return (
+        <div style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          padding: "9vh 4vw 0",
+          boxSizing: "border-box",
+          textAlign: "center",
+        }}>
+          {/* Eyebrow */}
+          <div style={{
+            fontSize: "0.78rem",
+            letterSpacing: 2.4,
+            color: ACCENT,
+            fontWeight: 700,
+            marginBottom: "1rem",
+            textTransform: "uppercase",
+          }}>
+            An Open Invitation · Free
+          </div>
+
+          {/* Title */}
+          <h1 style={{
+            fontSize: "clamp(2rem, 4.2vw, 4rem)",
+            lineHeight: 1.05,
+            letterSpacing: "-0.022em",
+            color: TEXT,
+            margin: "0 0 0.55rem 0",
+            fontWeight: 700,
+            maxWidth: "90%",
+          }}>
+            Bring your work. Get real feedback.
+          </h1>
+
+          {/* Invite tagline */}
+          <p style={{
+            fontSize: "clamp(1.05rem, 1.55vw, 1.45rem)",
+            color: ACCENT,
+            margin: "0 0 2.2vh 0",
+            lineHeight: 1.35,
+            fontFamily: SERIF_ITALIC,
+            fontStyle: "italic",
+            fontWeight: 400,
+            maxWidth: "66%",
+          }}>
+            Present what you're building and get live feedback from real humans while you iterate. No cost, ever.
+          </p>
+
+          {/* Browser embed of prebeta.club, bleeding off the bottom */}
+          <div style={{
+            width: "min(72%, 1180px)",
+            height: "90vh",
+            flexShrink: 0,
+          }}>
+            <BrowserPreviewCard
+              url="https://prebeta.club"
+              label="Pre-Beta Club"
+              tagline="bring your work, get real human feedback"
+              showHeader={false}
+              fill
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // =====================================================
+    // SLIDES INDEX + SPEAKER NOTES
+    // =====================================================
+    // Speaker notes live in SPEAKER_NOTES.md (kept out of the deck).
+    const SLIDES = [
+      { id: 1,  render: () => <TitleSlide /> },
+      { id: 2,  render: () => <SlideReachShift /> },
+      { id: 3,  render: () => <Slide2Lineage /> },
+      { id: 4,  render: () => <SlideVibeTrap /> },
+      { id: 5,  render: () => <Slide4Loop /> },
+      { id: 6,  render: () => <Slide3Steps /> },
+      { id: 7,  render: () => <Slide5Demo /> },
+      { id: 8,  render: () => <SlideGardening /> },
+      { id: 9,  render: () => <Slide7Maven /> },
+      { id: 10, render: () => <Slide8PreBeta /> },
+    ];
+
+    // =====================================================
+    // MAIN PRESENTATION SHELL
+    // =====================================================
+    function Presentation() {
+      const [current, setCurrent]     = useState(0);
+      const [visible, setVisible]     = useState(true);
+      const [overlay, setOverlay]     = useState({ visible: false, url: null, label: null, image: null });
+
+      const openOverlay  = useCallback((url, label, image = null) => setOverlay({ visible: true, url, label, image }), []);
+      const closeOverlay = useCallback(() => setOverlay({ visible: false, url: null, label: null, image: null }), []);
+
+      const goTo = useCallback((idx) => {
+        setCurrent((prev) => {
+          const next = Math.max(0, Math.min(SLIDES.length - 1, idx));
+          if (next !== prev) {
+            setVisible(false);
+            setTimeout(() => setVisible(true), 80);
+          }
+          return next;
+        });
+      }, []);
+
+      const goNext = useCallback(() => goTo(current + 1), [current, goTo]);
+      const goPrev = useCallback(() => goTo(current - 1), [current, goTo]);
+
+      useEffect(() => {
+        const handler = (e) => {
+          if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+          if (e.key === "Escape") {
+            if (overlay.visible) { e.preventDefault(); closeOverlay(); }
+            return;
+          }
+          if (overlay.visible) return;
+          if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+            e.preventDefault();
+            goNext();
+          } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+            e.preventDefault();
+            goPrev();
+          } else if (e.key === "Home") {
+            goTo(0);
+          } else if (e.key === "End") {
+            goTo(SLIDES.length - 1);
+          }
+        };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+      }, [goNext, goPrev, goTo, overlay.visible, closeOverlay]);
+
+      const touchStart = useRef(null);
+      const onTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
+      const onTouchEnd = (e) => {
+        if (touchStart.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchStart.current;
+        if (Math.abs(dx) > 50) {
+          if (dx < 0) goNext(); else goPrev();
+        }
+        touchStart.current = null;
+      };
+
+      const slide = SLIDES[current];
+
+      return (
+        <BrowserOverlayContext.Provider value={{ open: openOverlay }}>
+        <div
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          style={{
+            position: "fixed",
+            inset: 0,
+            color: TEXT,
+            fontFamily: FONT_STACK,
+            overflow: "hidden",
+          }}
+        >
+          <style>{`
+            @keyframes pf-fadeIn    { from { opacity: 0 } to { opacity: 1 } }
+            @keyframes pf-overlayIn { from { opacity: 0; transform: scale(0.97) } to { opacity: 1; transform: scale(1) } }
+            @keyframes pf-imgIn     { from { opacity: 0; transform: scale(0.82) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+            @keyframes pf-imgOut    { from { opacity: 1; transform: scale(1) translateY(0); } to { opacity: 0; transform: scale(0.88) translateY(8px); } }
+            @keyframes pf-scrimIn   { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes pf-scrimOut  { from { opacity: 1; } to { opacity: 0; } }
+            @keyframes pf-loopTravel { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -832; } }
+            .pf-fade-in  { animation: pf-fadeIn 220ms ease-out forwards; }
+            .pf-fade-out { opacity: 0; transition: opacity 80ms ease-in; }
+          `}</style>
+
+          {/* Top branding bar */}
+          <div style={{
+            position: "fixed",
+            top: 22, left: 26, right: 26,
+            display: "flex",
+            alignItems: "center",
+            zIndex: 50,
+            pointerEvents: "none",
+          }}>
+            <div style={{ pointerEvents: "auto" }}>
+              <PFLockup height={32} />
+            </div>
+            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.18)", margin: "0 22px" }} />
+            <span style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 1.8,
+              color: TEXT_DIM,
+              fontFamily: FONT_STACK,
+              marginRight: 12,
+            }}>
+              PROTOVIBING.AI
+            </span>
+            <div style={{ pointerEvents: "auto" }}>
+              <FullscreenButton />
+            </div>
+          </div>
+
+          {/* Slide stage */}
+          <div
+            key={slide.id}
+            className={visible ? "pf-fade-in" : "pf-fade-out"}
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {slide.render()}
+          </div>
+
+          {/* Prev button */}
+          {current !== 0 && (
+            <button
+              onClick={goPrev}
+              aria-label="Previous slide"
+              style={{
+                position: "fixed",
+                left: 16, bottom: 18,
+                background: "rgba(255,255,255,0.04)",
+                color: TEXT_MUTED,
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 999,
+                width: 36, height: 36,
+                fontSize: 18, cursor: "pointer",
+                opacity: 0.75, zIndex: 50,
+                fontFamily: FONT_STACK,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              &#8592;
+            </button>
+          )}
+
+          {/* Next button */}
+          {current !== SLIDES.length - 1 && (
+            <button
+              onClick={goNext}
+              aria-label="Next slide"
+              style={{
+                position: "fixed",
+                right: 16, bottom: 18,
+                background: "rgba(255,255,255,0.04)",
+                color: TEXT_MUTED,
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 999,
+                width: 36, height: 36,
+                fontSize: 18, cursor: "pointer",
+                opacity: 0.75, zIndex: 50,
+                fontFamily: FONT_STACK,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              &#8594;
+            </button>
+          )}
+
+          {/* Slide indicator + notes hint */}
+          <div style={{
+            position: "fixed",
+            bottom: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: TEXT_MUTED,
+            fontSize: 13,
+            letterSpacing: 1.5,
+            fontWeight: 600,
+            zIndex: 50,
+            fontVariantNumeric: "tabular-nums",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}>
+            <span>{current + 1} / {SLIDES.length}</span>
+          </div>
+
+        </div>
+
+        {/* Browser fullscreen overlay */}
+        <BrowserOverlay state={overlay} onClose={closeOverlay} />
+
+        </BrowserOverlayContext.Provider>
+      );
+    }
+
+    // =====================================================
+    // MOBILE FALLBACK
+    // =====================================================
+    function useIsMobile() {
+      const get = () => typeof window !== "undefined" && window.matchMedia("(max-width:767px)").matches;
+      const [m, setM] = useState(get());
+      useEffect(() => {
+        const mq = window.matchMedia("(max-width:767px)");
+        const handler = () => setM(mq.matches);
+        mq.addEventListener ? mq.addEventListener("change", handler) : mq.addListener(handler);
+        return () => {
+          mq.removeEventListener ? mq.removeEventListener("change", handler) : mq.removeListener(handler);
+        };
+      }, []);
+      return m;
+    }
+
+    function MobileNotice() {
+      return (
+        <div style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "10vh 8vw",
+          color: TEXT,
+          fontFamily: FONT_STACK,
+          textAlign: "center",
+          gap: "1.5rem",
+        }}>
+          <PFLockup height={36} />
+          <h1 style={{ fontSize: "1.6rem", color: TEXT, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
+            Evolving Agentic Workflows
+          </h1>
+          <p style={{ color: TEXT_MUTED, fontSize: "1rem", lineHeight: 1.55, margin: 0 }}>
+            This deck is designed for a laptop or large screen.
+            Please open it on a wider display.
+          </p>
+
+          {/* Speaker card */}
+          <div style={{
+            marginTop: "1rem",
+            paddingTop: "2rem",
+            borderTop: `1px solid ${CARD_BORDER}`,
+            width: "100%",
+            maxWidth: 320,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "0.85rem",
+          }}>
+            <img
+              src="images/MKrejci - CircleAvatar - WhiteBorder.png"
+              alt="Marc Krejci"
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: "50%",
+                display: "block",
+                boxShadow: `0 0 0 2px ${ACCENT_DIM}, 0 6px 20px rgba(0,0,0,0.35)`,
+              }}
+            />
+            <div style={{
+              fontSize: "1.15rem",
+              color: TEXT,
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              lineHeight: 1.2,
+            }}>
+              Marc Krejci
+            </div>
+            <div style={{
+              fontSize: "0.72rem",
+              color: TEXT_MUTED,
+              fontWeight: 500,
+              letterSpacing: 1.5,
+              textTransform: "uppercase",
+            }}>
+              Pathfinder Foundry
+            </div>
+            <a
+              href="mailto:marc@pfndr.co"
+              style={{
+                fontSize: "0.95rem",
+                color: ACCENT,
+                fontFamily: MONO,
+                letterSpacing: 0.3,
+                textDecoration: "none",
+                borderBottom: `1px solid ${ACCENT_DIM}`,
+                paddingBottom: 1,
+              }}
+            >
+              marc@pfndr.co
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const mobile = useIsMobile();
+      return mobile ? <MobileNotice /> : <Presentation />;
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
